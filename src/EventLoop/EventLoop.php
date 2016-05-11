@@ -18,7 +18,7 @@ class EventLoop
      */
     public function put(callable $callback, ...$args)
     {
-        array_push($this->queue, new Task($callback, $args));
+        array_push($this->queue, new Task($callback, ...$args));
     }
 
     /**
