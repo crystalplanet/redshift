@@ -18,8 +18,7 @@ class Redshift
      */
     public static function run(callable $main)
     {
-        self::$loop = new EventLoop();
-        self::$loop->put($main);
+        self::$loop = new EventLoop($main);
 
         self::$loop->run();
     }

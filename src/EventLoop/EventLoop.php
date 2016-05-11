@@ -10,6 +10,18 @@ class EventLoop
     private $queue = [];
 
     /**
+     * @var Task
+     */
+    private $main;
+
+    public function __construct(callable $main)
+    {
+        $this->main = new Task($main);
+
+        array_push($this->queue, $this->main);
+    }
+
+    /**
      * Adds a new task to the queue.
      *
      * @param callable $callback
@@ -33,7 +45,7 @@ class EventLoop
 
     /**
      * Starts the event loop.
-     * It will run until there are no more tasks sheduled for execution.
+     * It will run as long as the main function runs.
      *
      * If a task was blocked/interrupted,
      * it is put back at the end of the queue.
@@ -47,6 +59,10 @@ class EventLoop
 
             if ($task->isBlocked()) {
                 array_push($this->queue, $task);
+            }
+
+            if (!$task->isBlocked() && $task === $this->main) {
+                return;
             }
         }
     }
