@@ -79,7 +79,7 @@ class Channel
      */
     public function take()
     {
-        Redshift::async(function () {
+        Redshift::async(function ($channel) {
             yield from $channel->read();
         }, $this);
     }
