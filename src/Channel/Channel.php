@@ -4,7 +4,7 @@ namespace CrystalPlanet\Redshift\Channel;
 
 use CrystalPlanet\Redshift\Buffer\BlockingBuffer;
 use CrystalPlanet\Redshift\Buffer\BufferInterface;
-use CrystalPlanet\Redshift\ApplicationContext;
+use CrystalPlanet\Redshift\Redshift;
 
 class Channel
 {
@@ -30,7 +30,7 @@ class Channel
      *
      * @param mixed $messageContent
      */
-    public function write($messageContent = null)
+    public function write($messageContent)
     {
         while (!$this->buffer->isWriteable()) {
             yield;
@@ -60,5 +60,27 @@ class Channel
         }
 
         return $this->buffer->read()->content();
+    }
+
+    /**
+     * Asynchronously writes the message to the channel.
+     *
+     * @param mixed $messageContent
+     */
+    public function put($messageContent)
+    {
+        Redshift::async(function ($channel, $message) {
+            yield from $channel->write($message);
+        }, $this, $messageContent);
+    }
+
+    /**
+     * Asynchronously removes a message from the channel.
+     */
+    public function take()
+    {
+        Redshift::async(function () {
+            yield from $channel->read();
+        }, $this);
     }
 }
