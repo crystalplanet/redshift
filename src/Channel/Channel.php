@@ -17,7 +17,7 @@ class Channel
      * Creates a new channel.
      *
      * @param BufferInterface|null $buffer The buffer to use in the channel.
-     *                                     Defaults to 'new BlockingBuffer(1);'.
+     *                                     Defaults to 'new BlockingBuffer();'.
      */
     public function __construct(BufferInterface $buffer = null)
     {

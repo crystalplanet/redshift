@@ -26,7 +26,7 @@ class BlockingBuffer implements BufferInterface
      *
      * @param integer $size
      */
-    public function __construct($size = 1)
+    public function __construct($size = -1)
     {
         $this->size = $size;
     }
@@ -36,7 +36,7 @@ class BlockingBuffer implements BufferInterface
      */
     public function isWriteable()
     {
-        return count($this->buffer) < $this->size;
+        return 0 < $this->size && count($this->buffer) < $this->size;
     }
 
     /**
