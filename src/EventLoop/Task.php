@@ -65,12 +65,12 @@ class Task
     }
 
     /**
-     * Returns true if the task can be executed/resumed.
+     * Returns true if the task is blocked and should be put back to the queue.
      *
      * @return boolean
      */
-    public function valid()
+    public function isBlocked()
     {
-        return $this->generator->valid();
+        return $this->generator && $this->generator->valid();
     }
 }

@@ -45,7 +45,7 @@ class EventLoop
 
             $task->run();
 
-            if ($task->valid()) {
+            if ($task->isBlocked()) {
                 array_push($this->queue, $task);
             }
         }
