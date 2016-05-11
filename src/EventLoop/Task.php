@@ -37,7 +37,7 @@ class Task
     public function run()
     {
         if ($this->generator) {
-            $this->resume();
+            $this->resumeGenerator($this->generator);
             return;
         }
 
@@ -53,15 +53,24 @@ class Task
     }
 
     /**
-     * Resumes the execution of the task.
+     * Resumes the execution of the generator.
      */
-    private function resume()
+    private function resumeGenerator(\Generator $generator)
     {
-        if (!$this->generator->valid()) {
+        if (!$generator->valid()) {
             throw new InvalidTaskStatusException("Failed to resume a task!");
         }
 
-        $this->generator->send(null);
+        if (!$generator->current() instanceof \Generator) {
+            return $generator->send($generator->current());
+        }
+
+        if ($generator->current()->valid()) {
+            $this->resumeGenerator($generator->current());
+            return;
+        }
+
+        $generator->send($generator->current()->getReturn());
     }
 
     /**

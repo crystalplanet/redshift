@@ -70,7 +70,7 @@ class Channel
     public function put($messageContent)
     {
         Redshift::async(function ($channel, $message) {
-            yield from $channel->write($message);
+            yield $channel->write($message);
         }, $this, $messageContent);
     }
 
@@ -80,7 +80,7 @@ class Channel
     public function take()
     {
         Redshift::async(function ($channel) {
-            yield from $channel->read();
+            yield $channel->read();
         }, $this);
     }
 }
