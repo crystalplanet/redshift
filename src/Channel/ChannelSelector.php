@@ -64,7 +64,7 @@ class ChannelSelector
                 }
             }
 
-            return [$generator->current(), $channel];
+            return [$generator->getReturn(), $channel];
         }
 
         return false;
