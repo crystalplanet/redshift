@@ -12,15 +12,13 @@ Redshift::run(function () {
     $channel = new Channel();
 
     // Write 'foo' to a channel
-    yield from $channel->write('foo');
+    yield $channel->write('foo');
 
-    async(function ($channel) {
-        // Read 'foo' from a channel
-        $message = yield from $channel->read();
+    // Read 'foo' from a channel
+    $message = yield $channel->read();
 
-        // Print 'foo'
-        echo $message . PHP_EOL;
-    }, $channel);
+    // Print 'foo'
+    echo $message . PHP_EOL;
 });
 ```
 
@@ -34,19 +32,16 @@ To prevent the deadlock, you need to asynchronously execute the write operation:
 Redshift::run(function () {
     $channel = new Channel();
 
-    // Make the write asynchronous
     async(function ($channel) {
         // Write 'foo' to a channel
-        yield from $channel->write('foo');
+        yield $channel->write('foo');
     }, $channel);
 
-    async(function ($channel) {
-        // Read 'foo' from a channel
-        $message = yield from $channel->read();
+    // Read 'foo' from a channel
+    $message = yield $channel->read();
 
-        // Print 'foo'
-        echo $message . PHP_EOL;
-    }, $channel);
+    // Print 'foo'
+    echo $message . PHP_EOL;
 });
 ```
 
@@ -58,12 +53,10 @@ Redshift::run(function () {
 
     $channel->put('foo');
 
-    async(function ($channel) {
-        // Read 'foo' from a channel
-        $message = yield from $channel->read();
+    // Read 'foo' from a channel
+    $message = yield $channel->read();
 
-        // Print 'foo'
-        echo $message . PHP_EOL;
-    }, $channel);
+    // Print 'foo'
+    echo $message . PHP_EOL;
 });
 ```
