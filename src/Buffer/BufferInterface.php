@@ -22,6 +22,13 @@ interface BufferInterface
     function write(Message $message);
 
     /**
+     * Removes a message from the buffer.
+     *
+     * @param Message $message
+     */
+    function cancelWrite(Message $message);
+
+    /**
      * Checks if a message can be read from the buffer.
      * It is used to block the execution before a read operation.
      *
@@ -51,4 +58,9 @@ interface BufferInterface
      * @return boolean
      */
     function hasConsumer(Message $message);
+
+    /**
+     * Notifies the buffer a consumer canceled awaiting a message.
+     */
+    function removeConsumer();
 }

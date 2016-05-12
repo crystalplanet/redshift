@@ -50,6 +50,19 @@ class BlockingBuffer implements BufferInterface
     /**
      * {@inheritDoc}
      */
+    public function cancelWrite(Message $message)
+    {
+        $this->buffer = array_filter(
+            $this->buffer,
+            function ($current) use ($message) {
+                return $current === $message;
+            }
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function isReadable()
     {
         return !empty($this->buffer);
@@ -60,7 +73,7 @@ class BlockingBuffer implements BufferInterface
      */
     public function read()
     {
-        --$this->consumers;
+        $this->removeConsumer();
 
         return array_shift($this->buffer);
     }
@@ -79,6 +92,14 @@ class BlockingBuffer implements BufferInterface
     public function hasConsumer(Message $message)
     {
         return $this->indexOf($message) < $this->consumers;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function removeConsumer()
+    {
+        --$this->consumers;
     }
 
     /**

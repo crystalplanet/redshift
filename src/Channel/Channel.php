@@ -14,6 +14,25 @@ class Channel
     private $buffer;
 
     /**
+     * Waits until any of the passed instructions can be executed and returns the
+     * result.
+     * Passing in a channel will attempt a read, and passing in a tuple
+     * in form of [$channel $message] will attempt a read.
+     * The result is a tuple in form of [$message, $channel].
+     *
+     * @param mixed ...$args
+     * @return array
+     */
+    public static function any(...$args)
+    {
+        $selector = new ChannelSelector(...$args);
+
+        $result = yield $selector->select();
+
+        return $result;
+    }
+
+    /**
      * Creates a new channel.
      *
      * @param BufferInterface|null $buffer The buffer to use in the channel.
@@ -41,7 +60,14 @@ class Channel
         $this->buffer->write($message);
 
         while (!$this->buffer->hasConsumer($message)) {
-            yield;
+            yield $message;
+        }
+    }
+
+    public function cancelWrite(Message $message = null)
+    {
+        if ($message) {
+            $this->buffer->cancelWrite($message);
         }
     }
 
@@ -60,6 +86,11 @@ class Channel
         }
 
         return $this->buffer->read()->content();
+    }
+
+    public function cancelRead()
+    {
+        $this->buffer->removeConsumer();
     }
 
     /**
