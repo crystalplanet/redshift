@@ -8,10 +8,21 @@ use CrystalPlanet\Redshift\Redshift;
 
 class Channel
 {
+
     /**
      * @var BufferInterface
      */
     private $buffer;
+
+    /**
+     * @var Queue
+     */
+    private $messageQueue;
+
+    /**
+     * @var Queue
+     */
+    private $readersQueue;
 
     /**
      * Waits until any of the passed instructions can be executed and returns the
@@ -40,57 +51,91 @@ class Channel
      */
     public function __construct(BufferInterface $buffer = null)
     {
-        $this->buffer = $buffer ?: new BlockingBuffer(1);
+        $this->buffer = $buffer;
+
+        $this->messageQueue = new Queue();
+        $this->readersQueue = new Queue();
     }
 
     /**
      * Writes a message to the channel.
-     * It will block if the message cannot be written or cannot be consumed.
+     * It will block if the message cannot be written.
      *
      * @param mixed $messageContent
      */
     public function write($messageContent)
     {
-        while (!$this->buffer->isWriteable()) {
-            yield;
-        }
-
         $message = new Message($messageContent);
 
-        $this->buffer->write($message);
+        $this->messageQueue->enqueue($message);
 
-        while (!$this->buffer->hasConsumer($message)) {
-            yield $message;
+        if ($this->buffer) {
+            while ($this->messageQueue->peek() !== $message || !$this->buffer->isWriteable()) {
+                yield;
+            }
+
+            $this->buffer->write($this->messageQueue->dequeue());
+
+            return;
+        }
+
+        while ($this->readersQueue->size() - 1 < $this->messageQueue->indexOf($message)) {
+            yield;
         }
     }
+
 
     public function cancelWrite(Message $message = null)
     {
         if ($message) {
-            $this->buffer->cancelWrite($message);
+            $this->buffer->remove($message);
+            $this->messageQueue->remove($message);
         }
     }
 
     /**
-     * Reads a message to the channel.
+     * Reads a message from the channel.
      * It will block if no message can be read.
      *
      * @return mixed
      */
     public function read()
     {
-        $this->buffer->addConsumer();
+        $reader = new Reader();
 
-        while (!$this->buffer->isReadable()) {
+        $this->readersQueue->enqueue($reader);
+
+        while ($this->readersQueue->peek() !== $reader) {
+            yield $reader;
+        }
+
+        if ($this->buffer) {
+            while (!$this->buffer->isReadable) {
+                yield;
+            }
+
+            $this->readersQueue->dequeue();
+
+            return $this->buffer->read()->content();
+        }
+
+        while ($this->messageQueue->isEmpty()) {
             yield;
         }
 
-        return $this->buffer->read()->content();
+        $this->readersQueue->dequeue();
+
+        return $this->messageQueue->dequeue()->content();
     }
 
-    public function cancelRead()
+    /**
+     * Cancels a read from the channel.
+     *
+     * @param Reader $reader
+     */
+    public function cancelRead(Reader $reader)
     {
-        $this->buffer->removeConsumer();
+        $this->readersQueue->remove($reader);
     }
 
     /**
