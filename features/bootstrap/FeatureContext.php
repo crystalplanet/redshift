@@ -56,4 +56,16 @@ class FeatureContext implements SnippetAcceptingContext
 
         PHPUnit_Framework_Assert::assertEquals("", $this->process->getOutput());
     }
+
+    /**
+     * @Then /^the output should be:$/
+     */
+    public function theOutputShouldBe(PyStringNode $content)
+    {
+        if ($this->process->isRunning()) {
+            $this->process->wait();
+        }
+
+        PHPUnit_Framework_Assert::assertEquals((string) $content, $this->process->getOutput());
+    }
 }
