@@ -12,6 +12,11 @@ class FeatureContext implements SnippetAcceptingContext
     private $process;
 
     /**
+     * @var int
+     */
+    private $start;
+
+    /**
      * @Given /^a script with:$/
      *
      * @param string $filename
@@ -28,6 +33,7 @@ class FeatureContext implements SnippetAcceptingContext
     public function iRunTheScript()
     {
         $this->process->start();
+        $this->start = time();
     }
 
     /**
@@ -44,15 +50,32 @@ class FeatureContext implements SnippetAcceptingContext
     }
 
     /**
-     * @Then /^the output should be empty$/
+     * @When /^I wait for the process to complete$/
      */
-    public function theOutputShouldBeEmpty()
+    public function iWaitForTheProcessToComplete()
     {
         if ($this->process->isRunning()) {
             $this->process->wait();
         }
+    }
 
-        PHPUnit_Framework_Assert::assertEquals("", $this->process->getOutput());
+    /**
+     * @When /^I wait for (\d+) seconds?$/
+     */
+    public function iWaitForSecond($seconds)
+    {
+        sleep($seconds);
+    }
+
+    /**
+     * @Then /^the output should be empty$/
+     */
+    public function theOutputShouldBeEmpty()
+    {
+        PHPUnit_Framework_Assert::assertEquals(
+            "",
+            $this->process->getErrorOutput() . $this->process->getOutput()
+        );
     }
 
     /**
@@ -60,10 +83,14 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function theOutputShouldBe(PyStringNode $content)
     {
-        if ($this->process->isRunning()) {
-            $this->process->wait();
-        }
-
         PHPUnit_Framework_Assert::assertEquals((string) $content, $this->process->getOutput());
+    }
+
+    /**
+     * @Then /^the process should have ran for (\d+) seconds?$/
+     */
+    public function theProcessShouldHaveRanForSeconds($seconds)
+    {
+        PHPUnit_Framework_Assert::assertGreaterThanOrEqual(2, time() - $this->start);
     }
 }

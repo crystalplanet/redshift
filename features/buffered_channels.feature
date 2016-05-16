@@ -23,6 +23,7 @@ Feature: Buffered channels
       });
       """
     When I run the script
+    And I wait for the process to complete
     Then the output should be:
       """
       Hello World!
