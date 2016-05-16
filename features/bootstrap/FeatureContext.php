@@ -35,8 +35,6 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function iKillTheProcess()
     {
-        sleep(1);
-
         PHPUnit_Framework_Assert::assertTrue(
             $this->process->isRunning(),
             "The process already quit!"

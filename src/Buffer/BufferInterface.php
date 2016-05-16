@@ -7,8 +7,7 @@ use CrystalPlanet\Redshift\Channel\Message;
 interface BufferInterface
 {
     /**
-     * Checks if a message can be written to the buffer.
-     * It is used to block the execution before a write operation.
+     * Returns true if a message can be written to the buffer.
      *
      * @return boolean
      */
@@ -22,45 +21,16 @@ interface BufferInterface
     function write(Message $message);
 
     /**
-     * Removes a message from the buffer.
-     *
-     * @param Message $message
-     */
-    function cancelWrite(Message $message);
-
-    /**
-     * Checks if a message can be read from the buffer.
-     * It is used to block the execution before a read operation.
+     * Returns true if a message can be read from the buffer.
      *
      * @return boolean
      */
     function isReadable();
 
     /**
-     * Returns the next message in the buffer to a consumer.
-     * The message and the consumer are removed from the buffer.
+     * Returns the next message in the buffer and removes it.
      *
      * @return Message
      */
     function read();
-
-    /**
-     * Notifies the buffer there is a new consumer awaiting a message.
-     */
-    function addConsumer();
-
-    /**
-     * Checks if the message can be consumed.
-     * It is used to block the execution after a write,
-     * until the message is consumed.
-     *
-     * @param Message $message
-     * @return boolean
-     */
-    function hasConsumer(Message $message);
-
-    /**
-     * Notifies the buffer a consumer canceled awaiting a message.
-     */
-    function removeConsumer();
 }

@@ -87,10 +87,7 @@ class Channel
 
     public function cancelWrite(Message $message = null)
     {
-        if ($message) {
-            $this->buffer->remove($message);
-            $this->messageQueue->remove($message);
-        }
+        $this->messageQueue->remove($message);
     }
 
     /**
@@ -110,7 +107,7 @@ class Channel
         }
 
         if ($this->buffer) {
-            while (!$this->buffer->isReadable) {
+            while (!$this->buffer->isReadable()) {
                 yield;
             }
 

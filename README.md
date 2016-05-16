@@ -111,3 +111,27 @@ Redshift::run(function () {
 Hello World!
 Quit
 ```
+
+### Buffered channels
+
+Buffered channels can be created by passing in a buffer as it's first argument. Buffered channel will allow to write to it without blocking, until the buffer is full.
+
+```php
+use CrystalPlanet\Redshift\Buffer\Buffer;
+use CrystalPlanet\Redshift\Channel\Channel;
+use CrystalPlanet\Redshift\Redshift;
+
+Redshift::run(function () {
+    
+    $channel = new Channel(new Buffer(2));
+
+    // Won't block
+    yield $channel->write(true);
+
+    // Won't block
+    yield $channel->write(true);
+
+    // Will block
+    yield $channel->write(true);
+});
+```
