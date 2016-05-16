@@ -1,0 +1,20 @@
+language: php
+php:
+  - '7.0'
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+branches:
+  except:
+    - /^bugfix\/.*$/
+    - /^feature\/.*$/
+    - /^optimization\/.*$/
+
+before_script:
+  - composer selfupdate
+  - composer install
+
+script:
+  - vendor/bin/behat -f progress
