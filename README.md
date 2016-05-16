@@ -114,7 +114,7 @@ Quit
 
 ### Buffered channels
 
-Buffered channels can be created by passing in a buffer as it's first argument. Buffered channel will allow to write to it without blocking, until the buffer is full.
+Buffered channels can be created by passing in a buffer as it's first argument. A buffered channel will allow to write to it without blocking, until the buffer is full.
 
 ```php
 use CrystalPlanet\Redshift\Buffer\Buffer;
@@ -134,4 +134,32 @@ Redshift::run(function () {
     // Will block
     yield $channel->write(true);
 });
+```
+
+### Timeouts
+
+In order to perform non-blocking waits, timeout channels can be used. Timeout channels are just regular channels on which a value will be sent after the specified amount of time. The code below will output ```Hello```, and append ``` World!``` after 1 second.
+
+```php
+<?php
+
+require_once 'vendor/autoload.php';
+
+use CrystalPlanet\Redshift\Redshift;
+use CrystalPlanet\Redshift\Channel\Channel;
+use CrystalPlanet\Redshift\Time\Time;
+
+Redshift::run(function () {
+    $timeout = Time::after(1000);
+
+    echo 'Hello';
+
+    yield $timeout->read();
+
+    echo ' World!';
+});
+```
+
+```
+Hello World!
 ```
