@@ -2,7 +2,7 @@
 
 use Behat\Behat\Context\SnippetAcceptingContext;
 use Behat\Gherkin\Node\PyStringNode;
-use Symfony\Component\Process\PHPProcess;
+use Symfony\Component\Process\PhpProcess;
 
 class FeatureContext implements SnippetAcceptingContext
 {
@@ -24,7 +24,7 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function aScriptWith(PyStringNode $content)
     {
-        $this->process = new PHPProcess((string) $content);
+        $this->process = new PhpProcess((string) $content);
     }
 
     /**
