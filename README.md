@@ -141,10 +141,6 @@ Redshift::run(function () {
 In order to perform non-blocking waits, timeout channels can be used. Timeout channels are just regular channels on which a value will be sent after the specified amount of time. The code below will output ```Hello```, and append ``` World!``` after 1 second.
 
 ```php
-<?php
-
-require_once 'vendor/autoload.php';
-
 use CrystalPlanet\Redshift\Redshift;
 use CrystalPlanet\Redshift\Channel\Channel;
 use CrystalPlanet\Redshift\Time\Time;
