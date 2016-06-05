@@ -170,3 +170,43 @@ Feature: Channels
       """
       Hello World!
       """
+
+  Scenario: The reads don't have to happen in order as long as they are not blocked by writes
+    Given a script with:
+      """
+      <?php
+
+      require_once 'vendor/autoload.php';
+
+      use CrystalPlanet\Redshift\Redshift;
+      use CrystalPlanet\Redshift\Channel\Channel;
+
+      Redshift::run(function () {
+        $channel = new Channel();
+
+        async(function ($channel) {
+          echo yield $channel->read();
+          echo 2;
+        }, $channel);
+
+        async(function ($channel) {
+          yield $channel->write(1);
+          yield $channel->write(2);
+          yield $channel->write(3);
+        }, $channel);
+
+        async(function ($channel) {
+          echo yield $channel->read();
+          echo 3;
+        }, $channel);
+
+        echo yield $channel->read();
+        echo 1;
+      });
+      """
+    When I run the script
+    And I wait for the process to complete
+    Then the output should be:
+      """
+      3311
+      """
