@@ -5,75 +5,83 @@ namespace CrystalPlanet\Redshift\EventLoop;
 class EventLoop
 {
     /**
-     * @var array
+     * @var Task[]
      */
-    private $queue = [];
+    private $future = [];
+
+    /**
+     * @var \SplQueue
+     */
+    private $tick;
 
     /**
      * @var Task
      */
     private $main;
 
+    /**
+     * @param callable $main
+     */
     public function __construct(callable $main)
     {
         $this->main = new Task($main);
+        $this->tick = new \SplQueue();
 
-        array_push($this->queue, $this->main);
+        $this->addFutureTask($this->main);
     }
 
     /**
-     * Adds a new task to the queue.
-     *
      * @param callable $callback
-     * @param mixed ...$args Arguments to be supplied to the $callback
-     *                       at the time of execution.
+     * @param mixed ...$args
      */
-    public function put(callable $callback, ...$args)
+    public function scheduleTask(callable $callback, ...$args)
     {
-        array_push($this->queue, new Task($callback, ...$args));
-    }
-
-    /**
-     * Returns the next task in the queue.
-     *
-     * @return Task
-     */
-    public function take()
-    {
-        return array_shift($this->queue);
+        $this->addFutureTask(new Task($callback, ...$args));
     }
 
     /**
      * Starts the event loop.
-     * It will run as long as the main function runs.
-     *
-     * If a task was blocked/interrupted,
-     * it is put back at the end of the queue.
      */
     public function run()
     {
-        while (!$this->isEmpty()) {
-            $task = $this->take();
-
-            $task->run();
-
-            if ($task->isBlocked()) {
-                array_push($this->queue, $task);
-            }
-
-            if (!$task->isBlocked() && $task === $this->main) {
-                return;
-            }
+        while (!empty($this->future) && !$this->main->isFinished()) {
+            $this->nextTick();
+            $this->tick();
         }
     }
 
     /**
-     * Checks if there are no more tasks in the queue.
-     *
-     * @return boolean
+     * @return Task
      */
-    private function isEmpty()
+    private function nextTask()
     {
-        return empty($this->queue);
+        return $this->tick->dequeue();
+    }
+
+    private function nextTick()
+    {
+        foreach ($this->future as $task) {
+            if (!$task->isBlocked() || !$task->isStarted()) {
+                $this->tick->enqueue($task);
+            }
+        }
+    }
+
+    private function tick()
+    {
+        while (!$this->tick->isEmpty() && !$this->main->isFinished()) {
+            $task = $this->nextTask();
+
+            $task->run();
+
+            if ($task->isBlocked()) {
+                $this->addFutureTask($task);
+            }
+        }
+    }
+
+    private function addFutureTask(Task $task)
+    {
+        array_push($this->future, $task);
     }
 }
