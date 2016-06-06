@@ -2,12 +2,14 @@
 
 namespace CrystalPlanet\Redshift\EventLoop;
 
+use CrystalPlanet\Redshift\Channel\Awaitable;
+
 class Task
 {
     /**
      * @var callable
      */
-    private $task;
+    private $func;
 
     /**
      * @var array
@@ -15,9 +17,19 @@ class Task
     private $args;
 
     /**
+     * @var boolean
+     */
+    private $started = false;
+
+    /**
      * @var \Generator
      */
     private $generator;
+
+    /**
+     * @var mixed
+     */
+    private $generatorValue;
 
     /**
      * Creates a new task.
@@ -36,37 +48,73 @@ class Task
      */
     public function run()
     {
-        if ($this->generator) {
-            $this->resumeGenerator($this->generator);
-            return;
+        if (!$this->generator) {
+            $this->start();
         }
 
-        $this->start();
+        if ($this->generator) {
+            while (!$this->shouldWait() && $this->generator->valid()) {
+                $this->resume($this->generator);
+
+                $this->generatorValue = $this->getCurrentValue($this->generator);
+            }
+        }
     }
 
     /**
-     * Begins the execution of the task.
+     * Returns true if the task is in progress.
+     *
+     * @return boolean
+     */
+    public function isStarted()
+    {
+        return $this->started;
+    }
+
+    /**
+     * Returns true if the task is blocked.
+     *
+     * @return boolean
+     */
+    public function isBlocked()
+    {
+        return $this->generator && $this->generator->valid() && $this->shouldWait();
+    }
+
+    /**
+     * Returns true if the task is finished.
+     *
+     * @return boolean
+     */
+    public function isFinished()
+    {
+        return $this->started && !($this->generator && $this->generator->valid());
+    }
+
+    /**
+     * Initiates the generator.
      */
     private function start()
     {
+        $this->started = true;
+
         $this->generator = call_user_func_array($this->task, $this->args);
+        $this->generatorValue = $this->getCurrentValue($this->generator);
     }
 
     /**
      * Resumes the execution of the generator.
+     *
+     * @param \Generator $generator
      */
-    private function resumeGenerator(\Generator $generator)
+    private function resume(\Generator $generator)
     {
-        if (!$generator->valid()) {
-            throw new InvalidTaskStatusException("Failed to resume a task!");
-        }
-
         if (!$generator->current() instanceof \Generator) {
             return $generator->send($generator->current());
         }
 
         if ($generator->current()->valid()) {
-            $this->resumeGenerator($generator->current());
+            $this->resume($generator->current());
             return;
         }
 
@@ -74,12 +122,27 @@ class Task
     }
 
     /**
-     * Returns true if the task is blocked and should be put back to the queue.
+     * Returns the current generator value.
      *
-     * @return boolean
+     * @param \Generator $generator
+     * @return mixed
      */
-    public function isBlocked()
+    private function getCurrentValue(\Generator $generator)
     {
-        return $this->generator && $this->generator->valid();
+        if (!$generator->current() instanceof \Generator) {
+            return $generator->current();
+        }
+
+        return $this->getCurrentValue($generator->current());
+    }
+
+    /**
+     * Returns true if the task should wait before proceeding with execution.
+     */
+    private function shouldWait()
+    {
+        return $this->generatorValue &&
+            $this->generatorValue instanceof Awaitable &&
+            $this->generatorValue->isAwaiting();
     }
 }

@@ -2,137 +2,107 @@
 
 namespace CrystalPlanet\Redshift\Channel;
 
-use CrystalPlanet\Redshift\Buffer\BlockingBuffer;
 use CrystalPlanet\Redshift\Buffer\BufferInterface;
 use CrystalPlanet\Redshift\Redshift;
 
-class Channel
+class Channel implements ChannelInterface
 {
-
     /**
      * @var BufferInterface
      */
     private $buffer;
 
     /**
-     * @var Queue
+     * @var \SplQueue
      */
-    private $messageQueue;
+    private $writersQueue;
 
     /**
-     * @var Queue
+     * @var \SplQueue
      */
     private $readersQueue;
 
     /**
-     * Waits until any of the passed instructions can be executed and returns the
-     * result.
-     * Passing in a channel will attempt a read, and passing in a tuple
-     * in form of [$channel $message] will attempt a read.
-     * The result is a tuple in form of [$message, $channel].
-     *
-     * @param mixed ...$args
-     * @return array
+     * @var \SplQueue
      */
-    public static function any(...$args)
-    {
-        $selector = new ChannelSelector(...$args);
-
-        $result = yield $selector->select();
-
-        return $result;
-    }
+    private $messageQueue;
 
     /**
-     * Creates a new channel.
-     *
-     * @param BufferInterface|null $buffer The buffer to use in the channel.
-     *                                     Defaults to 'new BlockingBuffer();'.
+     * @param BufferInterface|null $buffer
      */
     public function __construct(BufferInterface $buffer = null)
     {
         $this->buffer = $buffer;
 
-        $this->messageQueue = new Queue();
-        $this->readersQueue = new Queue();
+        $this->writersQueue = new \SplQueue();
+        $this->readersQueue = new \SplQueue();
+        $this->messageQueue = new \SplQueue();
     }
 
     /**
-     * Writes a message to the channel.
-     * It will block if the message cannot be written.
-     *
-     * @param mixed $messageContent
+     * {@inheritDoc}
      */
     public function write($messageContent)
     {
+        $writer = new Awaitable();
         $message = new Message($messageContent);
 
+        $this->writersQueue->enqueue($writer);
         $this->messageQueue->enqueue($message);
 
         if ($this->buffer) {
-            while ($this->messageQueue->peek() !== $message || !$this->buffer->isWriteable()) {
-                yield;
+            while ($this->messageQueue->bottom() !== $message || !$this->buffer->isWriteable()) {
+                yield $writer->await();
             }
 
             $this->buffer->write($this->messageQueue->dequeue());
+            $this->notifyAwaiting($this->readersQueue);
 
             return;
         }
 
-        while ($this->readersQueue->size() - 1 < $this->messageQueue->indexOf($message)) {
-            yield;
+        $this->notifyAwaiting($this->readersQueue);
+
+        while ($this->readersQueue->count() <= $this->indexOf($message, $this->messageQueue)) {
+            yield $writer->await();
         }
-    }
-
-
-    public function cancelWrite(Message $message = null)
-    {
-        $this->messageQueue->remove($message);
     }
 
     /**
-     * Reads a message from the channel.
-     * It will block if no message can be read.
-     *
-     * @return mixed
+     * {@inheritDoc}
      */
     public function read()
     {
-        $reader = new Reader();
+        $reader = new Awaitable();
 
         $this->readersQueue->enqueue($reader);
 
-        while ($this->readersQueue->peek() !== $reader) {
-            yield $reader;
-        }
-
         if ($this->buffer) {
             while (!$this->buffer->isReadable()) {
-                yield;
+                yield $reader->await();
             }
 
             $this->readersQueue->dequeue();
+            $this->notifyAwaiting($this->writersQueue);
 
             return $this->buffer->read()->content();
         }
 
-        while ($this->messageQueue->isEmpty()) {
-            yield;
-        }
+        while ($this->messageQueue->count() <= $this->indexOf($reader, $this->readersQueue)) {
+            yield $reader->await();
+        }        
 
-        $this->readersQueue->dequeue();
+        $index = $this->indexOf($reader, $this->readersQueue);
 
-        return $this->messageQueue->dequeue()->content();
-    }
+        $msg = $this->messageQueue->offsetGet($index);
 
-    /**
-     * Cancels a read from the channel.
-     *
-     * @param Reader $reader
-     */
-    public function cancelRead(Reader $reader)
-    {
-        $this->readersQueue->remove($reader);
+        $this->readersQueue->offsetUnset($index);
+        $this->messageQueue->offsetUnset($index);
+
+        $this->notifyAwaiting($this->readersQueue);
+        $this->notifyAwaiting($this->writersQueue);
+
+        return $msg->content();
     }
 
     /**
@@ -155,5 +125,38 @@ class Channel
         Redshift::async(function ($channel) {
             yield $channel->read();
         }, $this);
+    }
+
+    /**
+     * Returns the position of the $element in the $queue.
+     *
+     * @param mixed $element
+     * @param \SplQueue $queue
+     *
+     * @return integer
+     */
+    private function indexOf($element, \SplQueue $queue)
+    {
+        foreach ($queue as $index => $value) {
+            if ($element === $value) {
+                return $index;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Notifies the waiting awaitables.
+     *
+     * @param \SplQueue $awaitables
+     */
+    private function notifyAwaiting(\SplQueue $awaitables)
+    {
+        foreach ($awaitables as $awaitable) {
+            if ($awaitable->isAwaiting()) {
+                $awaitable->notify();
+            }
+        }
     }
 }
