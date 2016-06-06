@@ -32,6 +32,6 @@ class Redshift
      */
     public static function async(callable $callback, ...$args)
     {
-        return self::$loop->put($callback, ...$args);
+        return self::$loop->scheduleTask($callback, ...$args);
     }
 }
