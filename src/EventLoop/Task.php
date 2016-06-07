@@ -7,9 +7,14 @@ use CrystalPlanet\Redshift\Channel\Awaitable;
 class Task
 {
     /**
+     * @var EventLoop
+     */
+    private $loop;
+
+    /**
      * @var callable
      */
-    private $func;
+    private $task;
 
     /**
      * @var array
@@ -34,11 +39,13 @@ class Task
     /**
      * Creates a new task.
      *
+     * @param EventLoop $loop
      * @param callable $task
      * @param mixed ...$args
      */
-    public function __construct(callable $task, ...$args)
+    public function __construct(EventLoop $loop, callable $task, ...$args)
     {
+        $this->loop = $loop;
         $this->task = $task;
         $this->args = $args;
     }
@@ -59,6 +66,15 @@ class Task
                 $this->generatorValue = $this->getCurrentValue($this->generator);
             }
         }
+
+        if ($this->shouldWait() && $this->generatorValue->awaitsResource()) {
+            $this->loop->addReadStream($this->generatorValue->getResource());
+        }
+    }
+
+    public function getAwaitable()
+    {
+        return $this->shouldWait() ? $this->generatorValue : null;
     }
 
     /**

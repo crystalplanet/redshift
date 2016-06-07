@@ -5,9 +5,14 @@ namespace CrystalPlanet\Redshift\EventLoop;
 class EventLoop
 {
     /**
-     * @var Task[]
+     * @var array
      */
-    private $future = [];
+    private $readStreams = [];
+
+    /**
+     * @var \SplDoublyLinkedList
+     */
+    private $future;
 
     /**
      * @var \SplQueue
@@ -24,8 +29,9 @@ class EventLoop
      */
     public function __construct(callable $main)
     {
-        $this->main = new Task($main);
+        $this->main = new Task($this, $main);
         $this->tick = new \SplQueue();
+        $this->future = new \SplDoublyLinkedList();
 
         $this->addFutureTask($this->main);
     }
@@ -36,7 +42,12 @@ class EventLoop
      */
     public function scheduleTask(callable $callback, ...$args)
     {
-        $this->addFutureTask(new Task($callback, ...$args));
+        $this->addFutureTask(new Task($this, $callback, ...$args));
+    }
+
+    public function addReadStream($stream)
+    {
+        array_push($this->readStreams, $stream);
     }
 
     /**
@@ -44,8 +55,14 @@ class EventLoop
      */
     public function run()
     {
+        $timeout = 0;
+
         while (!empty($this->future) && !$this->main->isFinished()) {
+            $this->waitForStreamActivity($timeout);
             $this->nextTick();
+
+            $timeout = $this->tick->count() === 0 ? 1 : 0;
+
             $this->tick();
         }
     }
@@ -60,8 +77,9 @@ class EventLoop
 
     private function nextTick()
     {
-        foreach ($this->future as $task) {
+        foreach ($this->future as $offset => $task) {
             if (!$task->isBlocked() || !$task->isStarted()) {
+                $this->future->offsetUnset($offset);
                 $this->tick->enqueue($task);
             }
         }
@@ -82,6 +100,21 @@ class EventLoop
 
     private function addFutureTask(Task $task)
     {
-        array_push($this->future, $task);
+        $this->future->push($task);
+    }
+
+    private function waitForStreamActivity($timeout = 0)
+    {
+        $changed = @stream_select($read = $this->readStreams, $write = [], $except = [], $timeout);
+
+        if ($changed > 0) {
+            foreach ($this->future as $task) {
+                if (in_array($task->getAwaitable()->getResource(), $read)) {
+                    $task->getAwaitable()->notify();
+                }
+            }
+
+            $this->readStreams = array_diff($this->readStreams, $read);
+        }
     }
 }
