@@ -68,6 +68,14 @@ class FeatureContext implements SnippetAcceptingContext
     }
 
     /**
+     * @When /^I write "([^"]*)" to stdin$/
+     */
+    public function iWriteToStdin($input)
+    {
+        $this->process->setInput($input);
+    }
+
+    /**
      * @Then /^the output should be empty$/
      */
     public function theOutputShouldBeEmpty()

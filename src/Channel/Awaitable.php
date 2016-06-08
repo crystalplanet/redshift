@@ -15,6 +15,21 @@ class Awaitable
     private $notified = false;
 
     /**
+     * @var resource
+     */
+    private $resource;
+
+    /**
+     * Creates an awaitable.
+     *
+     * @param stream $resource Optional stream resource to be awaited.
+     */
+    public function __construct($resource = null)
+    {
+        $this->resource = $resource;
+    }
+
+    /**
      * Marks the awaitable as awaiting and returns it.
      *
      * @return self
@@ -43,5 +58,21 @@ class Awaitable
     public function notify()
     {
         $this->notified = true;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function awaitsResource()
+    {
+        return isset($this->resource);
+    }
+
+    /**
+     * @return resource
+     */
+    public function getResource()
+    {
+        return $this->resource;
     }
 }
