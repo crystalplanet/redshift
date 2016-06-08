@@ -77,11 +77,18 @@ class EventLoop
 
     private function nextTick()
     {
-        foreach ($this->future as $offset => $task) {
+        $this->future->rewind();
+
+        $offset = 0;
+
+        while ($this->future->valid() && $task = $this->future->current()) {
             if (!$task->isBlocked() || !$task->isStarted()) {
-                $this->future->offsetUnset($offset);
                 $this->tick->enqueue($task);
+                $this->future->offsetUnset($offset++);
+                $this->future->prev();
             }
+
+            $this->future->next();
         }
     }
 
