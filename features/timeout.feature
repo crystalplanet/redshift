@@ -3,6 +3,7 @@ Feature: Timeout
   I should be able to
   use timeout channels
 
+  @wip
   Scenario: Pausing the execution for at least 2 seconds
     Given a script with:
       """
