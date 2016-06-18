@@ -16,7 +16,7 @@ Feature: Streams
       Redshift::run(function () {
         $stream = new Stream(fopen('php://stdin', 'r'));
 
-        echo yield $stream->read();
+        echo yield $stream->fgets();
       });
       """
     When I write "Hello World!" to stdin
@@ -40,7 +40,7 @@ Feature: Streams
       Redshift::run(function () {
         $stream = new Stream(fopen('php://stdin', 'r'));
 
-        echo yield $stream->read();
+        echo yield $stream->fgets();
 
         echo "unreachable";
       });

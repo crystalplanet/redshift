@@ -79,12 +79,10 @@ class EventLoop
     {
         $this->future->rewind();
 
-        $offset = 0;
-
         while ($this->future->valid() && $task = $this->future->current()) {
             if (!$task->isBlocked() || !$task->isStarted()) {
                 $this->tick->enqueue($task);
-                $this->future->offsetUnset($offset++);
+                $this->future->offsetUnset($this->future->key());
                 $this->future->prev();
             }
 
