@@ -72,6 +72,9 @@ class Task
         }
     }
 
+    /**
+     * @return Awaitable
+     */
     public function getAwaitable()
     {
         return $this->shouldWait() ? $this->generatorValue : null;
@@ -115,7 +118,10 @@ class Task
         $this->started = true;
 
         $this->generator = call_user_func_array($this->task, $this->args);
-        $this->generatorValue = $this->getCurrentValue($this->generator);
+
+        if ($this->generator && $this->generator instanceof \Generator) {
+            $this->generatorValue = $this->getCurrentValue($this->generator);        
+        }
     }
 
     /**
