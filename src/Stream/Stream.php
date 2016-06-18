@@ -35,7 +35,18 @@ class Stream
     /**
      * Performs a non-blocking fgets() on a stream.
      */
-    public function read()
+    public function fgets()
+    {
+        return yield $this->executeAsyncRead('fgets');
+    }
+
+    /**
+     * Executes a reading function on the stream asynchronously.
+     *
+     * @param callable $callback Function to execute.
+     * @return mixed Return from the function.
+     */
+    public function executeAsyncRead(callable $callback)
     {
         if ($this->reader) {
             throw new \RuntimeException('Only one process may read from a stream at a time!');
@@ -48,7 +59,7 @@ class Stream
 
             if ($changed === 1) {
                 $this->reader = null;
-                return fgets($this->stream);
+                return $callback($this->stream);
             }
 
             yield $this->reader->await();
