@@ -11,10 +11,7 @@ use CrystalPlanet\Redshift\Redshift;
 use CrystalPlanet\Redshift\Stream\Stream;
 
 Redshift::run(function () {
-    $stream = stream_socket_server('tcp://0.0.0.0:9000');
-    stream_set_blocking($stream, 0);
-
-    $server = new Stream($stream);
+    $server = new Stream(stream_socket_server('tcp://0.0.0.0:9000'));
 
     while (true) {
         $client = yield $server->executeAsyncRead('stream_socket_accept');
