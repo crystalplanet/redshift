@@ -2,49 +2,28 @@
 
 namespace CrystalPlanet\Redshift\Time;
 
-use CrystalPlanet\Redshift\Channel\Channel;
+use CrystalPlanet\Redshift\EventLoop\AwaitableInterface;
 
-class Timeout
+class Timeout implements AwaitableInterface
 {
-    /**
-     * @var Channel
-     */
-    private $channel;
-
-    /**
-     * @var int
-     */
     private $timeout;
 
-    /**
-     * Creates a new timeout.
-     *
-     * @param int $milliseconds Time to wait in milliseconds.
-     * @param Channel $channel Channel to send the signal on.
-     */
-    public function __construct($milliseconds, Channel $channel)
+    public function __construct($timeout = 0)
     {
-        $this->channel = $channel;
-
-        $this->timeout = $this->now() + $milliseconds;
-    }
-
-    public function __invoke()
-    {
-        while ($this->now() < $this->timeout) {
-            yield;
+        if (!is_int($timeout)) {
+            throw new \RuntimeException('$timeout must be a number!');
         }
 
-        $this->channel->put(true);
+        $this->timeout = $timeout + intval(microtime(true) * 1000);
     }
 
-    /**
-     * Returns current time in milliseconds.
-     *
-     * @return int
-     */
-    private function now()
+    public function shouldWait()
     {
-        return round(microtime(true) * 1000);
+        return $this->timeout - intval(microtime(true) * 1000) < 1;
+    }
+
+    public function await(Process $process)
+    {
+        $process->getEventLoop()->addTimeout($this->timeout, $process);
     }
 }
