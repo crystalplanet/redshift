@@ -2,12 +2,19 @@
 
 namespace CrystalPlanet\Redshift\EventLoop;
 
+use CrystalPlanet\Redshift\Utility\TimePriorityQueue;
+
 class EventLoop
 {
     /**
      * @var array
      */
     private $readStreams = [];
+
+    /**
+     * @var \SplDoublyLinkedList
+     */
+    private $timeouts;
 
     /**
      * @var \SplDoublyLinkedList
@@ -32,6 +39,7 @@ class EventLoop
         $this->main = new Task($this, $main);
         $this->tick = new \SplQueue();
         $this->future = new \SplDoublyLinkedList();
+        $this->timeouts = new \TimePriorityQueue();
 
         $this->addFutureTask($this->main);
     }
@@ -50,6 +58,13 @@ class EventLoop
         array_push($this->readStreams, $stream);
     }
 
+    public function addTimeout(Process $process, $timeout)
+    {
+        $this->timeouts->insert($process, $timeout);
+
+        // $this->timeouts-> wut wut wut;
+    }
+
     /**
      * Starts the event loop.
      */
@@ -61,20 +76,14 @@ class EventLoop
             $this->waitForStreamActivity($timeout);
             $this->nextTick();
 
-            $timeout = $this->tick->count() === 0 ? 1 : 0;
+            $timeout = $this->tick->count() === 0 ? 1 : 0; // take min from the shortest timeout and big default value
 
             $this->tick();
         }
     }
 
     /**
-     * @return Task
      */
-    private function nextTask()
-    {
-        return $this->tick->dequeue();
-    }
-
     private function nextTick()
     {
         $this->future->rewind();
@@ -93,7 +102,7 @@ class EventLoop
     private function tick()
     {
         while (!$this->tick->isEmpty() && !$this->main->isFinished()) {
-            $task = $this->nextTask();
+            $task = $this->tick->dequeue();
 
             $task->run();
 
@@ -108,9 +117,14 @@ class EventLoop
         $this->future->push($task);
     }
 
+    private function getNextTimeout()
+    {
+        return 
+    }
+
     private function waitForStreamActivity($timeout = 0)
     {
-        $changed = @stream_select($read = $this->readStreams, $write = [], $except = [], $timeout);
+        $changed = @stream_select($read = $this->readStreams, $write = [], $except = [], 0, 1000 * $timeout);
 
         if ($changed > 0) {
             foreach ($this->future as $task) {
