@@ -15,7 +15,7 @@
         "files": ["src/async.php"]
     },
     "require": {
-        "php": ">=7.0.0"
+        "php": ">=8.0.0"
     },
     "require-dev": {
         "behat/behat": "^3.1",
