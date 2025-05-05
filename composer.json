@@ -15,11 +15,11 @@
         "files": ["src/async.php"]
     },
     "require": {
-        "php": ">=7.0.0"
+        "php": ">=8.0.0"
     },
     "require-dev": {
         "behat/behat": "^3.1",
-        "symfony/process": "^3.0",
-        "phpunit/phpunit": "^5.3"
+        "symfony/process": "^7.0",
+        "phpunit/phpunit": "^12.0"
     }
 }

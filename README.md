@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/crystalplanet/redshift.svg?branch=master)](https://travis-ci.org/crystalplanet/redshift) [![Code Climate](https://codeclimate.com/github/crystalplanet/redshift/badges/gpa.svg)](https://codeclimate.com/github/crystalplanet/redshift)
 
-A PHP 7 library aimed at providing facilities for asynchronous programming and communication. Based on goroutines and core.async.
+A PHP library aimed at providing facilities for asynchronous programming and communication. Based on goroutines and core.async.
 
 ```
 composer require crystalplanet/redshift

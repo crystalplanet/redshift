@@ -110,7 +110,15 @@ class EventLoop
 
     private function waitForStreamActivity($timeout = 0)
     {
-        $changed = @stream_select($read = $this->readStreams, $write = [], $except = [], $timeout);
+        if (empty($this->readStreams)) {
+            return;
+        }
+
+        $read = $this->readStreams;
+        $write = [];
+        $except = [];
+
+        $changed = stream_select($read, $write, $except, $timeout);
 
         if ($changed > 0) {
             foreach ($this->future as $task) {
