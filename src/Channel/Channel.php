@@ -30,7 +30,7 @@ class Channel implements ChannelInterface
     /**
      * @param BufferInterface|null $buffer
      */
-    public function __construct(BufferInterface $buffer = null)
+    public function __construct(?BufferInterface $buffer = null)
     {
         $this->buffer = $buffer;
 
