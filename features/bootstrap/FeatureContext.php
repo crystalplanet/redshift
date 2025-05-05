@@ -2,6 +2,7 @@
 
 use Behat\Behat\Context\SnippetAcceptingContext;
 use Behat\Gherkin\Node\PyStringNode;
+use PHPUnit\Framework\Assert;
 use Symfony\Component\Process\PhpProcess;
 
 class FeatureContext implements SnippetAcceptingContext
@@ -41,7 +42,7 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function iKillTheProcess()
     {
-        PHPUnit_Framework_Assert::assertTrue(
+        Assert::assertTrue(
             $this->process->isRunning(),
             "The process already quit!"
         );
@@ -80,7 +81,7 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function theOutputShouldBeEmpty()
     {
-        PHPUnit_Framework_Assert::assertEquals(
+        Assert::assertEquals(
             "",
             $this->process->getErrorOutput() . $this->process->getOutput()
         );
@@ -91,7 +92,7 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function theOutputShouldBe(PyStringNode $content)
     {
-        PHPUnit_Framework_Assert::assertEquals(
+        Assert::assertEquals(
             (string) $content,
             $this->process->getErrorOutput() . $this->process->getOutput()
         );
@@ -102,6 +103,6 @@ class FeatureContext implements SnippetAcceptingContext
      */
     public function theProcessShouldHaveRanForSeconds($seconds)
     {
-        PHPUnit_Framework_Assert::assertGreaterThanOrEqual(2, time() - $this->start);
+        Assert::assertGreaterThanOrEqual(2, time() - $this->start);
     }
 }
